@@ -90,6 +90,8 @@
   .btn-ghost{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.4); margin-top:10px}
   .micro{font-size:11.5px; color:#9aa3b5; margin-top:13px; line-height:1.5}
   .form-err{display:none; color:#ffb4b4; font-size:13.5px; font-weight:600; margin-top:12px; line-height:1.4}
+  .field-err{display:none; color:#E8B4B4; font-size:12.5px; font-weight:600; text-align:left; margin:-6px 0 11px; line-height:1.3}
+  .field-err.show{display:block}
 
   /* ---- Success state ---- */
   .success{display:none}
@@ -139,7 +141,6 @@
       <button class="chip" data-outlet="juhu">Juhu</button>
       <button class="chip" data-outlet="bandra-bkc">Bandra BKC</button>
       <button class="chip" data-outlet="churchgate">Churchgate</button>
-      <button class="chip" data-outlet="lower-parel">Lower Parel</button>
     </div>
     <div class="chip-done" id="chipDone"></div>
   </section>
@@ -174,7 +175,8 @@
             <option value="playful-normal">Playful / Normal — Daily walks + regular play</option>
             <option value="very-active">Very Active — Long walks, runs, high energy</option>
           </select>
-          <input class="field" type="tel" id="phone" name="phone" placeholder="WhatsApp number" autocomplete="tel" />
+          <input class="field" type="tel" id="phone" name="phone" placeholder="WhatsApp number" autocomplete="tel" inputmode="numeric" maxlength="10" />
+          <div class="field-err" id="phoneErr"></div>
           <label class="consent"><input type="checkbox" id="consent" /><span>It's okay for TENDS to reach out.</span></label>
           <button class="btn btn-gold" type="submit">Submit &amp; Explore TENDS</button>
           <div class="form-err" id="formErr"></div>
@@ -260,6 +262,8 @@
   form.addEventListener('submit', function(e){
     e.preventDefault();
     clearErr();
+    var phoneErr = document.getElementById('phoneErr');
+    phoneErr.classList.remove('show'); phoneErr.textContent = '';
     var phoneEl = document.getElementById('phone');
     var phone = phoneEl.value.trim();
     var consent = document.getElementById('consent').checked;
@@ -269,10 +273,13 @@
       showErr('Please add your name and your dog’s name.');
       return;
     }
-    if(phone.replace(/\D/g,'').length < 7){
+    if(phone.replace(/\D/g,'').length !== 10){
       phoneEl.focus(); phoneEl.style.outline = '2px solid #CD3A54';
+      phoneErr.textContent = 'Please enter a valid 10-digit number.';
+      phoneErr.classList.add('show');
       return;
     }
+    phoneEl.style.outline = '';
     if(!consent){
       document.querySelector('.consent').style.color = '#E8B4B4';
       return;
