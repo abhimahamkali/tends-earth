@@ -214,7 +214,7 @@ const phone = rawPhone.startsWith('+') ? rawPhone : '+91' + rawPhone.replace(/^0
 ### Form fields (current version)
 1. Your name (owner's name)
 2. Your dog's name
-3. Dog's age (text input) + Dog's weight in kg (dropdown: 1–10)
+3. Dog's age (dropdown: 1–9 years) + Dog's weight in kg (dropdown: 1–10)
 4. Activity level (dropdown, matching TENDS feeding calculator):
    - `mostly-calm` → Mostly Calm — Quiet lifestyle, mostly indoors
    - `playful-normal` → Playful / Normal — Daily walks + regular play
@@ -304,6 +304,18 @@ The `outlet` param pre-selects the chip and is stored as attribution on both the
 **Problem 2:** Even after the JS fix, KPIs showed "—" and the table showed "Loading…" because the Airtable PAT only had `data.records:write` scope — it could save records but not read them back.
 **Fix:** Updated the existing PAT at airtable.com/create/tokens to add `data.records:read` scope. Same token, no regeneration needed.
 
+### Dashboard JS silently broken (duplicate `const` declaration)
+**Problem:** `const allDates` was declared twice in `loadData()` — once for the subtitle, once for the traffic chart. This is a `SyntaxError` that prevents the entire `<script>` block from parsing, so no JS ran at all. KPIs showed "—" and charts showed "Loading…" indefinitely.
+**Fix:** Renamed the first occurrence to `subtitleDates`.
+
+### Edge cache serving stale empty data
+**Problem:** `api/data.js` had `Cache-Control: s-maxage=60` — Vercel's edge was caching the API response for 60s. Visits written to Airtable wouldn't appear on the dashboard until the cache expired.
+**Fix:** Changed to `Cache-Control: no-store` so every `/api/data` request hits Airtable fresh.
+
+### Outlet casing mismatch
+**Problem:** "juhu" (from URL param) and "Juhu" (manually entered) were counted as separate outlets in the dashboard.
+**Fix:** Outlet names are now title-cased in `api/data.js` before aggregation.
+
 ### Vercel deploy fails on folder with special characters
 **Problem:** `vercel deploy` inside "TENDs & Earth" failed due to `&` and spaces in folder name.
 **Fix:** Run `vercel link --yes --project tends-earth` first to create the `.vercel/project.json` binding, then `vercel deploy --prod` works.
@@ -332,4 +344,6 @@ Layout: mobile-first, max-width 480px.
 - [ ] Design Klaviyo welcome flow: Day 0 welcome → Day 3 breed/activity education → Day 7 first purchase offer
 - [ ] Brief all 5 outlet staff on the QR code + free pop redemption script
 - [x] Connect Vercel GitHub integration — `git push` to `main` now auto-deploys both projects (done via `vercel git connect`)
+- [x] Add `Owner Name` and `Activity Level` columns to Airtable Leads table (created via Airtable MCP)
+- [x] Dog's age changed to dropdown (1–9 years) matching weight and activity level style
 - [ ] Once enough real data accumulates (~50+ visits), use the dashboard to identify the top-converting outlet and replicate its setup at others
