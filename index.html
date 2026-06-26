@@ -203,6 +203,16 @@
 
 <script>
 (function(){
+  // ---- 0. Log page visit ----
+  (function(){
+    var p = new URLSearchParams(window.location.search);
+    fetch('/api/pageview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ outlet: p.get('outlet') || '', source: p.get('src') || 'direct' }),
+    }).catch(function(){});
+  })();
+
   // ---- 1. Read attribution params from the QR ----
   var params = new URLSearchParams(window.location.search);
   var lead = {
