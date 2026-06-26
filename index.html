@@ -89,6 +89,7 @@
   .btn-gold:active{background:var(--gold-dk)}
   .btn-ghost{background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.4); margin-top:10px}
   .micro{font-size:11.5px; color:#9aa3b5; margin-top:13px; line-height:1.5}
+  .form-err{display:none; color:#ffb4b4; font-size:13.5px; font-weight:600; margin-top:12px; line-height:1.4}
 
   /* ---- Success state ---- */
   .success{display:none}
@@ -176,6 +177,7 @@
           <input class="field" type="tel" id="phone" name="phone" placeholder="WhatsApp number" autocomplete="tel" />
           <label class="consent"><input type="checkbox" id="consent" /><span>It's okay for TENDS to reach out.</span></label>
           <button class="btn btn-gold" type="submit">Submit &amp; Explore TENDS</button>
+          <div class="form-err" id="formErr"></div>
         </form>
         <div class="micro">That's the whole ask. We never share your details.</div>
       </div>
@@ -250,11 +252,23 @@
   var capture = document.getElementById('capture');
   var success = document.getElementById('success');
 
+  var submitBtn = form.querySelector('button[type="submit"]');
+  var formErr = document.getElementById('formErr');
+  function showErr(msg){ if(formErr){ formErr.textContent = msg; formErr.style.display = 'block'; } }
+  function clearErr(){ if(formErr){ formErr.textContent = ''; formErr.style.display = 'none'; } }
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
+    clearErr();
     var phoneEl = document.getElementById('phone');
     var phone = phoneEl.value.trim();
     var consent = document.getElementById('consent').checked;
+    var ownerName = document.getElementById('ownername').value.trim();
+    var dogName = document.getElementById('dogname').value.trim();
+    if(!ownerName || !dogName){
+      showErr('Please add your name and your dog’s name.');
+      return;
+    }
     if(phone.replace(/\D/g,'').length < 7){
       phoneEl.focus(); phoneEl.style.outline = '2px solid #CD3A54';
       return;
@@ -263,27 +277,42 @@
       document.querySelector('.consent').style.color = '#E8B4B4';
       return;
     }
-    lead.ownerName = document.getElementById('ownername').value.trim();
-    lead.dogName = document.getElementById('dogname').value.trim();
+    lead.ownerName = ownerName;
+    lead.dogName = dogName;
     lead.phone = phone;
     lead.age = document.getElementById('age').value.trim();
     lead.weight = document.getElementById('weight').value;
     lead.activityLevel = document.getElementById('activity').value;
     lead.consent = true;
 
-    // Submit to backend (Airtable + Klaviyo)
+    // Submit to backend — wait for the response so we can catch duplicates
+    var origLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
     fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(lead),
-    }).catch(function(e) { console.error('Submit error:', e); });
-
-    // reveal success state ("show this at the counter")
-    capture.style.display = 'none';
-    success.classList.add('show');
-    document.getElementById('shopBtn').href =
-      'https://tendsmall.com/?ref=earth-' + (lead.spotted||lead.outlet||'cafe');
-    success.scrollIntoView({behavior:'smooth', block:'center'});
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data && data.duplicate){
+        showErr(data.message || 'You have already submitted once.');
+        submitBtn.disabled = false; submitBtn.textContent = origLabel;
+        return;
+      }
+      // reveal success state ("show this at the counter")
+      capture.style.display = 'none';
+      success.classList.add('show');
+      document.getElementById('shopBtn').href =
+        'https://tendsmall.com/?ref=earth-' + (lead.spotted||lead.outlet||'cafe');
+      success.scrollIntoView({behavior:'smooth', block:'center'});
+    })
+    .catch(function(err){
+      console.error('Submit error:', err);
+      showErr('Something went wrong. Please try again.');
+      submitBtn.disabled = false; submitBtn.textContent = origLabel;
+    });
   });
 })();
 </script>

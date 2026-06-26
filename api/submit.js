@@ -25,8 +25,37 @@ export default async function handler(req, res) {
   const results = {};
   const warnings = [];
 
-  // ── 1. Airtable ──────────────────────────────────────────────
   const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
+
+  // ── 0. Duplicate guard: same Owner Name + Dog Name within this cafe ──
+  if (AIRTABLE_PAT && (ownerName || '').trim() && (dogName || '').trim()) {
+    try {
+      const norm  = s => (s || '').trim().toLowerCase();
+      const wantO = norm(ownerName), wantD = norm(dogName);
+      const filter = encodeURIComponent(`{Partner}="${partnerName}"`); // partnerName is controlled, no user quotes
+      let offset = '', dup = false;
+      do {
+        const u = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(AIRTABLE_TABLE)}`
+          + `?pageSize=100&filterByFormula=${filter}`
+          + `&fields%5B%5D=${encodeURIComponent('Owner Name')}&fields%5B%5D=${encodeURIComponent('Dog Name')}`
+          + (offset ? `&offset=${encodeURIComponent(offset)}` : '');
+        const cr = await fetch(u, { headers: { Authorization: `Bearer ${AIRTABLE_PAT}` } });
+        if (!cr.ok) break;
+        const cj = await cr.json();
+        dup = (cj.records || []).some(r =>
+          norm(r.fields['Owner Name']) === wantO && norm(r.fields['Dog Name']) === wantD);
+        offset = (!dup && cj.offset) ? cj.offset : '';
+      } while (offset);
+      if (dup) {
+        return res.status(200).json({
+          success: false, duplicate: true,
+          message: 'You have already submitted once.',
+        });
+      }
+    } catch (e) { /* non-fatal — allow the submit if the check itself fails */ }
+  }
+
+  // ── 1. Airtable ──────────────────────────────────────────────
   if (AIRTABLE_PAT) {
     try {
       const atRes = await fetch(
