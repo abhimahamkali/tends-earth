@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { ownerName, dogName, phone: rawPhone, age, weight, activityLevel, outlet, spotted, source, consent } = req.body || {};
+  const { ownerName, dogName, phone: rawPhone, age, weight, activityLevel, outlet, spotted, source, consent, partner } = req.body || {};
 
   // Normalise to E.164 — always +91 for this activation
   const phone = rawPhone
@@ -17,6 +17,11 @@ export default async function handler(req, res) {
     : '';
 
   const resolvedOutlet = spotted || outlet || 'Unknown';
+
+  // ── Which cafe activation? (shared base, tagged by Partner) ──
+  const isPilgrim     = partner === 'cafe-pilgrim';
+  const partnerName   = isPilgrim ? 'Cafe Pilgrim' : 'Earth Cafe';
+  const defaultSource = isPilgrim ? 'pilgrim-cafe-qr' : 'earth-cafe-qr';
   const results = {};
   const warnings = [];
 
@@ -43,7 +48,8 @@ export default async function handler(req, res) {
                 'Weight (kg)':    weight       || '',
                 'Activity Level': activityLevel|| '',
                 'Outlet':      resolvedOutlet,
-                'Source':      source   || 'earth-cafe-qr',
+                'Partner':     partnerName,
+                'Source':      source   || defaultSource,
                 'Consent':     consent  === true,
                 'Submitted At': new Date().toISOString(),
               },
@@ -65,7 +71,10 @@ export default async function handler(req, res) {
 
   // ── 2. Klaviyo ───────────────────────────────────────────────
   const KLAVIYO_KEY     = process.env.KLAVIYO_PRIVATE_KEY;
-  const KLAVIYO_LIST_ID = process.env.KLAVIYO_LIST_ID;
+  // Optional per-cafe list; falls back to the shared list if not set
+  const KLAVIYO_LIST_ID = (isPilgrim && process.env.KLAVIYO_LIST_ID_PILGRIM)
+    ? process.env.KLAVIYO_LIST_ID_PILGRIM
+    : process.env.KLAVIYO_LIST_ID;
   if (KLAVIYO_KEY && KLAVIYO_LIST_ID) {
     const klHeaders = {
       Authorization: `Klaviyo-API-Key ${KLAVIYO_KEY}`,
@@ -89,8 +98,8 @@ export default async function handler(req, res) {
                 dog_weight:     weight         || '',
                 activity_level: activityLevel  || '',
                 outlet:         resolvedOutlet,
-                source:         source         || 'earth-cafe-qr',
-                partner:        'Earth Cafe',
+                source:         source         || defaultSource,
+                partner:        partnerName,
               },
             },
           },

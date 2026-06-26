@@ -11,7 +11,8 @@ export default async function handler(req, res) {
   const AIRTABLE_PAT = process.env.AIRTABLE_PAT;
   if (!AIRTABLE_PAT) return res.status(200).json({ ok: false });
 
-  const { outlet, source } = req.body || {};
+  const { outlet, source, partner } = req.body || {};
+  const partnerName = partner === 'cafe-pilgrim' ? 'Cafe Pilgrim' : 'Earth Cafe';
   const now = new Date();
   const date = now.toISOString().slice(0, 10); // YYYY-MM-DD IST approx
 
@@ -25,6 +26,7 @@ export default async function handler(req, res) {
           records: [{ fields: {
             'Timestamp': now.toISOString(),
             'Outlet':    outlet || 'Unknown',
+            'Partner':   partnerName,
             'Source':    source || 'direct',
             'Date':      date,
           }}],
