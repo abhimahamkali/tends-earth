@@ -346,4 +346,5 @@ Layout: mobile-first, max-width 480px.
 - [x] Connect Vercel GitHub integration — `git push` to `main` now auto-deploys both projects (done via `vercel git connect`)
 - [x] Add `Owner Name` and `Activity Level` columns to Airtable Leads table (created via Airtable MCP)
 - [x] Dog's age changed to dropdown (1–9 years) matching weight and activity level style
+- [x] Spacing adjusted: larger gap above "Where did you spot us?" chips, tighter gap below it (closer to form)
 - [ ] Once enough real data accumulates (~50+ visits), use the dashboard to identify the top-converting outlet and replicate its setup at others
