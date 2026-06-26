@@ -331,5 +331,5 @@ Layout: mobile-first, max-width 480px.
 - [ ] Add `Owner Name` and `Activity Level` columns to Airtable Leads table (Text type) if not already there
 - [ ] Design Klaviyo welcome flow: Day 0 welcome → Day 3 breed/activity education → Day 7 first purchase offer
 - [ ] Brief all 5 outlet staff on the QR code + free pop redemption script
-- [ ] Connect Vercel GitHub integration so `git push` to `main` auto-deploys (currently deploying via CLI)
+- [x] Connect Vercel GitHub integration — `git push` to `main` now auto-deploys both projects (done via `vercel git connect`)
 - [ ] Once enough real data accumulates (~50+ visits), use the dashboard to identify the top-converting outlet and replicate its setup at others
