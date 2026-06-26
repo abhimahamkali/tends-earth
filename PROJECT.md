@@ -122,6 +122,13 @@ printf 'YOUR_VALUE_HERE' | vercel env add VARIABLE_NAME production --yes
 
 > ⚠️ PowerShell `echo` adds a BOM character (U+FEFF) which breaks API auth headers silently. Always use Bash `printf`.
 
+### Airtable PAT scopes required
+The PAT needs **both** scopes — not just one:
+- `data.records:read` — required by `api/data.js` (analytics dashboard reads all leads + visits)
+- `data.records:write` — required by `api/submit.js` and `api/pageview.js` (form saves leads, page load saves visits)
+
+If the dashboard shows empty KPIs and "Loading…" that never resolves, the PAT is missing `data.records:read`. Go to airtable.com/create/tokens → find the token → add the read scope → Save changes. No need to regenerate — the same token value works immediately after saving.
+
 ---
 
 ## Airtable
@@ -290,9 +297,12 @@ The `outlet` param pre-selects the chip and is stored as attribution on both the
 **Problem:** Outlet field was a single-select with predefined options. Submitting "churchgate" (not in the list) caused a 422 error, silently dropping the Airtable save.
 **Fix:** Add `typecast: true` to the Airtable POST body — it auto-creates new select options.
 
-### Dashboard showing dummy data
-**Problem:** All KPI values, funnel numbers, outlet leaderboard, and chart data were hardcoded in the HTML. The JS was writing to IDs that didn't exist on the elements.
-**Fix:** Added IDs to every dynamic element. JS now populates all of them from `/api/data`. No hardcoded values remain anywhere in the dashboard HTML.
+### Dashboard showing dummy data / empty KPIs
+**Problem 1:** All KPI values, funnel numbers, outlet leaderboard, and the recent leads table (Bruno, Mochi, etc.) were hardcoded in the HTML. The JS was writing to element IDs that didn't exist, so the real data never replaced the fake rows.
+**Fix:** Added IDs to every dynamic element. All hardcoded HTML rows removed. JS populates everything from `/api/data`.
+
+**Problem 2:** Even after the JS fix, KPIs showed "—" and the table showed "Loading…" because the Airtable PAT only had `data.records:write` scope — it could save records but not read them back.
+**Fix:** Updated the existing PAT at airtable.com/create/tokens to add `data.records:read` scope. Same token, no regeneration needed.
 
 ### Vercel deploy fails on folder with special characters
 **Problem:** `vercel deploy` inside "TENDs & Earth" failed due to `&` and spaces in folder name.
